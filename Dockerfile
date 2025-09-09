@@ -6,8 +6,6 @@ COPY requirements.txt requirements.txt
 
 RUN pip install -r requirements.txt
 
-ENV secretpassword=kpopdemonhunters
-
 WORKDIR /contrans2025
 
 EXPOSE 8888
