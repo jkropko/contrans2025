@@ -310,7 +310,7 @@ class contrans:
 
                 r = requests.get(root + endpoint, params=params,headers=self.headers)
                 while r.status_code != 200:
-                    #print(r.text)
+                    print(r.text)
                     time.sleep(10)
                     continue
 
