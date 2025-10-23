@@ -272,18 +272,20 @@ class contrans:
         endpoint = f'/v1/candidate/{fec_id}/committees/'
         params = {'api_key': self.feckey, 'cycle': '2024'}
         r = requests.get(root + endpoint, params=params, headers=self.headers)
+        while r.status_code != 200:
+            time.sleep(10)
+            r = requests.get(root + endpoint, params=params, headers=self.headers)
         committee_ids = [x['committee_id'] for x in r.json()['results']]
         return committee_ids
 
-'''
     def get_member_contributions(self, fec_id):
 
         root = 'https://api.open.fec.gov'
         endpoint = '/v1/schedules/schedule_a/'
 
         committee_ids = self.get_contrib_committees(fec_id)
+        contrib_list = []
         for c in committee_ids:
-            contrib_df = pd.DataFrame()
             
             params = {'api_key': self.feckey,
                       'committee_id': c,
@@ -292,7 +294,7 @@ class contrans:
 
             r = requests.get(root + endpoint, params=params, headers=self.headers)
 
-            contrib_list = [{'contributor_name': x['contributor_name'],
+            contrib_list = contrib_list + [{'contributor_name': x['contributor_name'],
                             'contributor_aggregate_ytd': x['contributor_aggregate_ytd'],
                             'memo_text': x['memo_text'],
                             'pdf_url': x['pdf_url']} for x in r.json()['results']]
@@ -301,23 +303,44 @@ class contrans:
             newrecords = len(r.json()['results'])
 
             while newrecords > 0:
-                print(len(contrib_list))
+                #print(len(contrib_list))
 
                 params['last_contribution_receipt_amount']=lastindex['last_contribution_receipt_amount']
                 params['last_index']=lastindex['last_index']
 
-                r = requests.get(root + endpoint, params=params,headers=headers)
+                r = requests.get(root + endpoint, params=params,headers=self.headers)
+                while r.status_code != 200:
+                    #print(r.text)
+                    time.sleep(10)
+                    continue
 
                 contrib_list = contrib_list + [{'contributor_name': x['contributor_name'],
                             'contributor_aggregate_ytd': x['contributor_aggregate_ytd'],
                             'memo_text': x['memo_text'],
-                            'pdf_url': x['pdf_url']} for x in r.json()['results']]
+                            'pdf_url': x['pdf_url'],
+                            'fec_committee_id': c} for x in r.json()['results']]
                 
                 lastindex = r.json()['pagination']['last_indexes']
 
                 newrecords = len(r.json()['results'])
 
 
-        contrib_df =pd.DataFrame(contrib_list)
-        contrib_df
-'''
+        contrib_df = pd.DataFrame(contrib_list)
+        contrib_df['fec_id'] = fec_id
+        return contrib_df
+
+    def get_all_contributions(self):
+        fec_ids = pd.read_csv('data/fec_ids.csv')
+        contrib_df = pd.read_csv('data/contrib.csv')
+        fid = fec_ids[fec_ids['fec_id'].notna()]['fec_id'].unique()
+        already_have = contrib_df['fec_id'].unique()
+        need_to_get = np.setdiff1d(fid, already_have)
+        print(f'{len(need_to_get)} legislators still to upload')
+        i = 1
+        for f in need_to_get:
+            print(f'Now uploading legislator {i} ({f}) of {len(need_to_get)}')
+            newdata = self.get_member_contributions(f)
+            contrib_df = pd.concat([contrib_df, newdata])
+            contrib_df.to_csv(f'data/contrib.csv', index=False)
+            i += 1
+            
