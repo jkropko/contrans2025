@@ -303,7 +303,7 @@ class contrans:
             newrecords = len(r.json()['results'])
 
             while newrecords > 0:
-                #print(len(contrib_list))
+                print(len(contrib_list))
 
                 params['last_contribution_receipt_amount']=lastindex['last_contribution_receipt_amount']
                 params['last_index']=lastindex['last_index']
