@@ -11,7 +11,7 @@ services:
       - dbnetwork
 
   postgres:
-    image: postgres
+    image: postgres:17.6
 
     #Question 1: What environmental variables are required by this image?
     env_file:
@@ -23,7 +23,7 @@ services:
 
     #Question 3: What folder inside the container stores the data you need to save?
     volumes:
-      - postgresdata:/var/lib/postgresql/18/docker
+      - postgresdata:/var/lib/postgresql/data
 
     networks:
       - dbnetwork
