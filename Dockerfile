@@ -8,6 +8,6 @@ RUN pip install -r requirements.txt
 
 WORKDIR /contrans2025
 
-EXPOSE 8888
+EXPOSE 8050
 
-CMD ["jupyter", "lab","--ip=0.0.0.0","--allow-root"]
+CMD ["python", "app/app.py"]
