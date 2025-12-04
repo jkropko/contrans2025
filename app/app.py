@@ -62,7 +62,7 @@ app.layout = html.Div(
             dcc.Dropdown(id = 'dropdown', options=dropdown_options, 
                          value='N000188') # Step 1: User input
         ],
-                 style={'width':'25%', 'float':'left'}),
+                 style={'width':'24%', 'float':'left'}),
 
         html.Div([
             dcc.Tabs([
@@ -76,12 +76,17 @@ app.layout = html.Div(
                             dcc.Graph(id='vote_scatter')
                         ]),
                 dcc.Tab(label = 'Sponsored Bills',
-                        children = []),
+                        children = [
+                            dcc.Markdown("**The following keywords and phrases describe this legislator's work in Congress**"),
+                            dcc.Graph(id = 'tfidf_bar'),
+                            dcc.Markdown('**This legislator has sponsored the following bills:**'),
+                            dcc.Graph(id = 'bills_table')
+                        ]),
                 dcc.Tab(label = 'Who is Giving Them Money?',
                         children = [])
             ])
         ],
-                 style={'width':'75%', 'float':'right'})
+                 style={'width':'74%', 'float':'right'})
 
 
     ]
@@ -145,6 +150,33 @@ def vote_scatterplot(b):
                  hover_name = 'comparison_member',
                  color = 'party',
                  color_discrete_map={'Democrat': 'blue','Republican': 'red'})
+    return [fig]
+
+@app.callback([Output(component_id='bills_table', component_property='figure')],
+              [Input(component_id='dropdown', component_property='value')])
+
+def billstable(b):
+    myquery = f'''
+        SELECT bill_title, introducedDate, url
+        FROM bills
+        WHERE bioguide_id = '{b}' and bill_title != 'None' 
+    '''
+    bills = pd.read_sql_query(myquery, con=engine)
+    return [ff.create_table(bills)]
+
+@app.callback([Output(component_id='tfidf_bar', component_property='figure')],
+              [Input(component_id='dropdown', component_property='value')])
+
+def tfidf_bar(b):
+    myquery = f'''
+    SELECT *
+    FROM tfidf
+    WHERE bioguide_id = '{b}'
+    ORDER BY tf_idf
+    '''
+    tfidf_data = pd.read_sql_query(myquery, con=engine)
+    fig = px.bar(tfidf_data, y = 'keyword', x = 'tf_idf', color='tf_idf')
+    fig.update_layout(yaxis_title="Keywords or Phrases", xaxis_title="TF-IDF")
     return [fig]
 
 # Run the dashboard
